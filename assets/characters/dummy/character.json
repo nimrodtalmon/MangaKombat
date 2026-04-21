@@ -1,0 +1,27 @@
+{
+  "id": "dummy",
+  "displayName": "Blue",
+  "color": "#3c82dc",
+
+  "sprites": {
+    "idle":   "idle.png",
+    "walk":   "walk.png",
+    "attack": "attack.png",
+    "hit":    "hit.png",
+    "crouch": "crouch.png",
+    "win":    "win.png"
+  },
+
+  "spriteConfig": {
+    "scale": 1.0
+  },
+
+  "stats": {
+    "walkSpeed":     3.5,
+    "jumpVelocityY": -16.5,
+    "weight":        1.0,
+    "health":        100
+  },
+
+  "states": {}
+}

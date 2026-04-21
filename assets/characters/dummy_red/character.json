@@ -1,0 +1,36 @@
+{
+  "id": "dummy_red",
+  "displayName": "Red",
+  "color": "#dc3c3c",
+
+  "sprites": {
+    "idle":   "idle.png",
+    "walk":   "walk.png",
+    "attack": "attack.png",
+    "hit":    "hit.png",
+    "crouch": "crouch.png",
+    "win":    "win.png"
+  },
+
+  "spriteConfig": {
+    "scale": 1.0
+  },
+
+  "stats": {
+    "walkSpeed":     4.0,
+    "jumpVelocityY": -17.0,
+    "weight":        1.1,
+    "health":        100
+  },
+
+  "states": {
+    "kick_high": {
+      "attackBoxes": [{
+        "startFrame": 5, "endFrame": 14,
+        "box": { "x": 20, "y": -140, "w": 68, "h": 44 },
+        "damage": 15, "hitstunFrames": 24, "knockbackX": 8, "blockDamage": 3
+      }],
+      "transform": { "leanX": 12 }
+    }
+  }
+}
