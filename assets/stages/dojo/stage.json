@@ -1,0 +1,8 @@
+{
+  "id": "dojo",
+  "name": "The Dojo",
+  "skyTop":    "#0a0a1a",
+  "skyBottom": "#1a0a2a",
+  "floorColor": "#1a1008",
+  "midColor":   "#2a1804"
+}

@@ -1,0 +1,37 @@
+{
+  "id": "ben",
+  "displayName": "Ben",
+  "color": "#4a9eff",
+
+  "sprites": {
+    "idle":   "idle.png",
+    "walk":   "idle.png",
+    "attack": "idle.png",
+    "hit":    "idle.png",
+    "crouch": "idle.png",
+    "win":    "idle.png"
+  },
+
+  "spriteConfig": {
+    "scale": 1.0
+  },
+
+  "stats": {
+    "walkSpeed":     3.5,
+    "jumpVelocityY": -16.5,
+    "weight":        1.0,
+    "health":        100
+  },
+
+  "states": {
+    "idle": {
+      "transform": { "oscillateY": 2, "oscillatePeriod": 55 }
+    },
+    "punch_high": {
+      "transform": { "leanX": 16 }
+    },
+    "kick_high": {
+      "transform": { "leanX": 10 }
+    }
+  }
+}

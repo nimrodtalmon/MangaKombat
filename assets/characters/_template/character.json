@@ -1,0 +1,33 @@
+{
+  "_comment": "Copy this file to assets/characters/<id>/character.json and fill in your values.",
+  "id": "template",
+  "displayName": "Fighter",
+  "color": "#888888",
+
+  "sprites": {
+    "idle":   "idle.png",
+    "walk":   "idle.png",
+    "attack": "idle.png",
+    "hit":    "idle.png",
+    "crouch": "idle.png",
+    "win":    "idle.png"
+  },
+
+  "spriteConfig": {
+    "scale": 1.0
+  },
+
+  "stats": {
+    "walkSpeed":     3.5,
+    "jumpVelocityY": -16.5,
+    "weight":        1.0,
+    "health":        100
+  },
+
+  "states": {
+    "_comment": "Override any DEFAULT_STATES entry here. Only list states you want to customise.",
+    "idle": {
+      "transform": { "oscillateY": 2, "oscillatePeriod": 60 }
+    }
+  }
+}

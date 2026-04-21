@@ -1,0 +1,12 @@
+{
+  "name": "mangakombat",
+  "version": "1.0.0",
+  "description": "Mortal Kombat-style web fighting game with manga character sprites",
+  "scripts": {
+    "dev": "npx serve . -l 8080",
+    "start": "npx serve . -l 8080"
+  },
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
