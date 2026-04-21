@@ -1,6 +1,10 @@
 {
   "id": "dojo",
   "name": "The Dojo",
+
+  "_backgroundNote": "Drop any PNG here and set 'background' to its filename — the game scales it to fill the screen.",
+  "background": "background.png",
+
   "skyTop":    "#0a0a1a",
   "skyBottom": "#1a0a2a",
   "floorColor": "#1a1008",

@@ -46,6 +46,7 @@ export class FightState {
     let stageData = null;
     try {
       stageData = await this.assetLoader.loadJSON('assets/stages/dojo/stage.json');
+      stageData._basePath = 'assets/stages/dojo';
     } catch (_) { /* use procedural default */ }
 
     this._engine = new FightEngine(
