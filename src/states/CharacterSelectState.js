@@ -2,7 +2,8 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants.js';
 
 // Each entry in ROSTER must correspond to a folder under assets/characters/.
 // Add character IDs here when adding new fighters.
-export const ROSTER = ['dummy', 'dummy_red', 'ben', 'warrior'];
+// Add character IDs here once their PNG sprites are in assets/characters/<id>/
+export const ROSTER = ['dummy', 'dummy_red'];
 
 const PORTRAIT_SIZE = 110;
 const COLS          = 4;
