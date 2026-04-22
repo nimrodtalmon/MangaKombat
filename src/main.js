@@ -23,8 +23,20 @@ async function main() {
   // Touch joystick — only created on mobile
   const touch = isMobile ? new TouchControls(canvas) : null;
 
+  // On mobile, route canvas taps to character select
+  if (isMobile) {
+    canvas.addEventListener('touchstart', e => {
+      if (sm._current !== charSelect) return;
+      e.preventDefault();
+      const t   = e.changedTouches[0];
+      const r   = canvas.getBoundingClientRect();
+      const scl = 800 / r.width;
+      charSelect.handleTap((t.clientX - r.left) * scl, (t.clientY - r.top) * scl);
+    }, { passive: false });
+  }
+
   // ── Game states ───────────────────────────────────────────────────────────
-  const charSelect    = new CharacterSelectState(assetLoader, { defaultVsAI: isMobile });
+  const charSelect    = new CharacterSelectState(assetLoader, { defaultVsAI: isMobile, isMobile });
   const roundAnnounce = new RoundAnnouncerState(assetLoader);
   const fight         = new FightState(assetLoader, inputManager, { isMobile });
   const victory       = new VictoryState();
@@ -57,8 +69,8 @@ async function main() {
   const loop = new GameLoop(
     // update
     () => {
-      // Push touch joystick state into inputManager before any snapshot reads
-      if (touch) touch.update(inputManager);
+      // Push touch joystick state — skip during char select (tap handled separately)
+      if (touch && sm._current !== charSelect) touch.update(inputManager);
 
       const p1 = inputManager.getSnapshot(1);
       const p2 = inputManager.getSnapshot(2);
@@ -74,8 +86,8 @@ async function main() {
     (interp) => {
       renderer.beginFrame();
       sm.render(ctx, interp);
-      // Joystick overlay always on top
-      if (touch) touch.render(ctx);
+      // Joystick overlay only during fight/announce/victory
+      if (touch && sm._current !== charSelect) touch.render(ctx);
     },
   );
 

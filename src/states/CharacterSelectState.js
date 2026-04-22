@@ -11,10 +11,11 @@ const GAP           = 20;
 const GRID_TOP      = 170;
 
 export class CharacterSelectState {
-  constructor(assetLoader, { defaultVsAI = false } = {}) {
+  constructor(assetLoader, { defaultVsAI = false, isMobile = false } = {}) {
     this.assetLoader    = assetLoader;
     this.stateMachine   = null; // injected by StateMachine.register
     this._defaultVsAI   = defaultVsAI;
+    this._isMobile      = isMobile;
 
     this._portraits  = {}; // id → Image
     this._charData   = {}; // id → parsed JSON
@@ -95,6 +96,37 @@ export class CharacterSelectState {
     }
   }
 
+  // Called by main.js on mobile touchstart events (game-space coords).
+  handleTap(gx, gy) {
+    if (!this._ready || this._confirmed[0]) return;
+
+    // Mode toggle button area
+    const toggleX = CANVAS_WIDTH / 2;
+    const toggleY = 80;
+    if (gy >= 62 && gy <= 108 && Math.abs(gx - toggleX) < 170) {
+      this._vsAI = !this._vsAI;
+      return;
+    }
+
+    // Portrait grid hit test — first tap selects, second tap confirms
+    const totalW = COLS * PORTRAIT_SIZE + (COLS - 1) * GAP;
+    const startX = (CANVAS_WIDTH - totalW) / 2;
+    for (let i = 0; i < ROSTER.length; i++) {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      const x   = startX + col * (PORTRAIT_SIZE + GAP);
+      const y   = GRID_TOP + row * (PORTRAIT_SIZE + GAP + 20);
+      if (gx >= x && gx <= x + PORTRAIT_SIZE && gy >= y && gy <= y + PORTRAIT_SIZE) {
+        if (this._cursor[0] === i) {
+          this._confirmed[0] = true; // second tap → confirm
+        } else {
+          this._cursor[0] = i;       // first tap → highlight
+        }
+        return;
+      }
+    }
+  }
+
   render(ctx) {
     // Background
     ctx.fillStyle = '#000';
@@ -111,19 +143,37 @@ export class CharacterSelectState {
     ctx.font      = 'bold 14px monospace';
     ctx.fillText('SELECT YOUR FIGHTER', CANVAS_WIDTH / 2, 58);
 
-    // Mode toggle
+    // Mode toggle button
     const modeFlash = Math.floor(this._frame / 20) % 2 === 0;
-    ctx.fillStyle = modeFlash ? '#fff' : '#aaa';
-    ctx.font      = 'bold 13px monospace';
-    const modeLabel = this._vsAI ? 'MODE: VS CPU' : 'MODE: VS PLAYER';
-    ctx.fillText(`${modeLabel}   [E: toggle]`, CANVAS_WIDTH / 2, 80);
-
-    ctx.fillStyle = '#666';
-    ctx.font      = '10px monospace';
-    if (this._vsAI) {
-      ctx.fillText('P1: Q/Z to confirm', CANVAS_WIDTH / 2, 98);
+    const modeLabel = this._vsAI ? 'VS CPU' : 'VS PLAYER';
+    if (this._isMobile) {
+      // Draw as a tappable button
+      const bw = 160, bh = 30, bx = CANVAS_WIDTH / 2 - bw / 2, by2 = 68;
+      ctx.fillStyle = modeFlash ? '#333' : '#222';
+      ctx.fillRect(bx, by2, bw, bh);
+      ctx.strokeStyle = modeFlash ? '#fff' : '#888';
+      ctx.lineWidth   = 2;
+      ctx.strokeRect(bx, by2, bw, bh);
+      ctx.fillStyle    = modeFlash ? '#fff' : '#bbb';
+      ctx.font         = 'bold 13px monospace';
+      ctx.fillText(modeLabel, CANVAS_WIDTH / 2, by2 + 10);
+      ctx.fillStyle = '#555';
+      ctx.font      = '9px monospace';
+      ctx.fillText('TAP TO TOGGLE', CANVAS_WIDTH / 2, by2 + 22);
+      ctx.fillStyle = '#555';
+      ctx.font      = '10px monospace';
+      ctx.fillText('tap once to select   tap again to confirm', CANVAS_WIDTH / 2, 108);
     } else {
-      ctx.fillText('P1: Q/Z to confirm   P2: Numpad 7/1 to confirm', CANVAS_WIDTH / 2, 98);
+      ctx.fillStyle = modeFlash ? '#fff' : '#aaa';
+      ctx.font      = 'bold 13px monospace';
+      ctx.fillText(`MODE: ${modeLabel}   [E: toggle]`, CANVAS_WIDTH / 2, 80);
+      ctx.fillStyle = '#666';
+      ctx.font      = '10px monospace';
+      if (this._vsAI) {
+        ctx.fillText('P1: Q/Z to confirm', CANVAS_WIDTH / 2, 98);
+      } else {
+        ctx.fillText('P1: Q/Z to confirm   P2: Numpad 7/1 to confirm', CANVAS_WIDTH / 2, 98);
+      }
     }
 
     if (!this._ready) {
