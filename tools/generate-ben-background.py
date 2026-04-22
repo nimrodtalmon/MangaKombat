@@ -1,203 +1,211 @@
 #!/usr/bin/env python3
-"""Generates a stylized background inspired by Ben's rose painting."""
+"""
+Generates a background closely inspired by Ben's rose painting:
+cream paper, grey wing brushstrokes, three thorny rose stems,
+hand-lettered BEN text, dark irregular border.
+
+NOTE: You can replace assets/stages/dojo/background.png with a photo of
+Ben's actual painting — Stage.js will use any PNG placed there directly.
+"""
 
 from PIL import Image, ImageDraw, ImageFilter
 import random, math, os
 
-random.seed(42)
+random.seed(7)
 W, H = 800, 450
 
-img = Image.new('RGB', (W, H), (240, 235, 228))
+img = Image.new('RGB', (W, H), (238, 232, 220))
 d   = ImageDraw.Draw(img)
 
-# ── Off-white textured base ───────────────────────────────────────────────────
-for _ in range(380):
+# ── Cream/paper textured base ─────────────────────────────────────────────────
+for _ in range(500):
     x1 = random.randint(0, W)
-    x2 = x1 + random.randint(20, 160)
+    x2 = x1 + random.randint(30, 200)
     y  = random.randint(0, H)
-    g  = random.randint(195, 230)
-    d.line([(x1, y), (min(x2, W), y)], fill=(g, g-3, g-8), width=random.randint(1, 3))
+    v  = random.randint(198, 230)
+    d.line([(x1, y), (min(x2, W), y)], fill=(v, v-4, v-10), width=random.randint(1, 4))
 
-# ── Grey-blue wing shapes ─────────────────────────────────────────────────────
-def wing(cx, cy, flip=False):
-    pts = []
-    sign = -1 if flip else 1
-    # Large sweeping wing made of overlapping tapered polygons
-    feathers = [
-        # (tip_dx, tip_dy, base_w)
-        (-sign*180, -70, 28),
-        (-sign*140, -110, 22),
-        (-sign*100, -120, 18),
-        (-sign* 60, -105, 16),
-        (-sign* 30,  -80, 14),
+# Some vertical texture
+for _ in range(80):
+    x = random.randint(0, W)
+    y1 = random.randint(0, H)
+    y2 = y1 + random.randint(10, 60)
+    v  = random.randint(200, 225)
+    d.line([(x, y1), (x, min(y2, H))], fill=(v, v-3, v-8), width=1)
+
+# ── Grey-blue ink wing shapes ─────────────────────────────────────────────────
+def draw_wing(cx, cy, flip):
+    s = -1 if flip else 1
+    # Multiple overlapping ink-stroke polygons to mimic watercolour feathers
+    layers = [
+        # (relative tip, width at base) — all from (cx, cy)
+        [(-s*160, -55), (-s*130, -95), (-s*90, -105), (-s*50, -90), (-s*20, -60)],
+        [(-s*140, -40), (-s*120, -80), (-s*80,  -88), (-s*40, -72), (-s*10, -45)],
+        [(-s*110, -20), (-s*95,  -55), (-s*65,  -65), (-s*30, -52), (-s* 5, -30)],
+        [(-s*170, -70), (-s*150,-110), (-s*105,-118), (-s*60,-100), (-s*25, -68)],
     ]
-    for (tx, ty, bw) in feathers:
-        col_v = random.randint(155, 185)
-        col   = (col_v - 20, col_v - 10, col_v + 12)
-        pts   = [
-            (cx + tx, cy + ty),
-            (cx - sign * bw // 2, cy + 10),
-            (cx + sign * bw // 2, cy + 10),
-        ]
-        d.polygon(pts, fill=col, outline=(100, 110, 130))
+    for pts_rel in layers:
+        v   = random.randint(145, 175)
+        col = (v - 22, v - 14, v + 8)
+        pts = [(cx, cy)] + [(cx + dx, cy + dy) for dx, dy in pts_rel] + [(cx, cy)]
+        d.polygon(pts, fill=col)
 
-wing(220, 230, flip=False)   # left wing
-wing(580, 230, flip=True)    # right wing
+    # Fine feather stroke lines
+    for i in range(18):
+        angle  = math.radians(150 + i * 8) * s
+        length = 60 + i * 9
+        ex  = cx + math.cos(angle) * length
+        ey  = cy - math.sin(angle) * abs(length * 0.55)
+        lv  = random.randint(120, 158)
+        lc  = (lv - 18, lv - 10, lv + 14)
+        d.line([(cx, cy), (ex, ey)], fill=lc, width=random.choice([1, 1, 2]))
 
-# Add finer feather lines
-for wx, wy, fl in [(220, 230, False), (580, 230, True)]:
-    sign = -1 if fl else 1
-    for i in range(12):
-        angle = math.radians(140 + i * 8) * sign
-        length = 80 + i * 8
-        ex = wx + math.cos(angle) * length
-        ey = wy - math.sin(angle) * abs(length * 0.6)
-        lv = random.randint(130, 160)
-        d.line([(wx, wy), (ex, ey)], fill=(lv-15, lv-8, lv+15), width=2)
+draw_wing(185, 250, flip=False)
+draw_wing(615, 250, flip=True)
 
-# ── "BEN" text in rough ink style ────────────────────────────────────────────
-def rough_rect(d, x, y, w, h, color=(20, 15, 18)):
-    # Slightly irregular filled rectangle for blocky lettering
-    for dy in range(h):
-        jl = random.randint(-1, 1)
-        jr = random.randint(-1, 1)
-        d.line([(x + jl, y + dy), (x + w + jr, y + dy)], fill=color, width=1)
+# ── "BEN" hand-lettered block text ───────────────────────────────────────────
+INK = (22, 16, 20)
 
-# B
-bx, by = 272, 18
-rough_rect(d, bx,    by,    10, 50)          # vertical
-rough_rect(d, bx+10, by,    18,  8)          # top bar
-rough_rect(d, bx+10, by+18, 16,  8)          # mid bar
-rough_rect(d, bx+10, by+42, 18,  8)          # bot bar
-rough_rect(d, bx+24, by+4,   8, 14)          # top bump
-rough_rect(d, bx+24, by+26,  8, 16)          # bot bump
+def rough_fill(d, polys, col=INK):
+    """Fill polygon with slightly wobbly edges to mimic hand lettering."""
+    for poly in polys:
+        jittered = [(x + random.randint(-1,1), y + random.randint(-1,1)) for x,y in poly]
+        d.polygon(jittered, fill=col)
 
-# E
-ex2, ey = 320, 18
-rough_rect(d, ex2,    ey,     8, 50)
-rough_rect(d, ex2+8,  ey,    28,  8)
-rough_rect(d, ex2+8,  ey+20, 22,  8)
-rough_rect(d, ex2+8,  ey+42, 28,  8)
+# B at x=260
+bx, by = 260, 18
+rough_fill(d, [[(bx,by),(bx+12,by),(bx+12,by+60),(bx,by+60)]])        # stem
+rough_fill(d, [[(bx+12,by),(bx+42,by),(bx+42,by+10),(bx+12,by+10)]])  # top bar
+rough_fill(d, [[(bx+12,by+26),(bx+38,by+26),(bx+38,by+36),(bx+12,by+36)]])  # mid bar
+rough_fill(d, [[(bx+12,by+50),(bx+42,by+50),(bx+42,by+60),(bx+12,by+60)]])  # bot bar
+rough_fill(d, [[(bx+34,by+5),(bx+48,by+5),(bx+48,by+28),(bx+34,by+28)]])    # top bump
+rough_fill(d, [[(bx+32,by+33),(bx+50,by+33),(bx+50,by+57),(bx+32,by+57)]]) # bot bump
 
-# N
-nx, ny = 370, 18
-rough_rect(d, nx,    ny,  10, 50)
-rough_rect(d, nx+30, ny,  10, 50)
-for i in range(32):
-    dx2 = int(i * 30 / 32)
-    dy2 = int(i * 50 / 32)
-    d.line([(nx+10+dx2, ny+dy2), (nx+10+dx2+3, ny+dy2+3)], fill=(20,15,18), width=4)
+# E at x=325
+ex2, ey = 325, 18
+rough_fill(d, [[(ex2,ey),(ex2+12,ey),(ex2+12,ey+60),(ex2,ey+60)]])
+rough_fill(d, [[(ex2+12,ey),(ex2+42,ey),(ex2+42,ey+10),(ex2+12,ey+10)]])
+rough_fill(d, [[(ex2+12,ey+25),(ex2+35,ey+25),(ex2+35,ey+35),(ex2+12,ey+35)]])
+rough_fill(d, [[(ex2+12,ey+50),(ex2+42,ey+50),(ex2+42,ey+60),(ex2+12,ey+60)]])
 
-# ── Rose stems ────────────────────────────────────────────────────────────────
-STEM_GREEN  = (50, 120, 45)
-STEM_DARK   = (30,  80, 30)
-THORN_COL   = (40, 100, 38)
+# N at x=385
+nx, ny = 385, 18
+rough_fill(d, [[(nx,ny),(nx+12,ny),(nx+12,ny+60),(nx,ny+60)]])           # left stem
+rough_fill(d, [[(nx+38,ny),(nx+50,ny),(nx+50,ny+60),(nx+38,ny+60)]])     # right stem
+# diagonal
+for i in range(36):
+    px = nx + 12 + int(i * 26 / 36)
+    py = ny     + int(i * 60 / 36)
+    d.rectangle([px, py, px+8, py+8], fill=INK)
 
-def stem_with_thorns(d, x, y_top, y_bot):
-    d.line([(x, y_top), (x, y_bot)], fill=STEM_GREEN, width=5)
-    d.line([(x+1, y_top), (x+1, y_bot)], fill=STEM_DARK, width=2)
-    # thorns
-    for ty in range(y_top + 20, y_bot, 22):
+# ── Rose stems with thorns ────────────────────────────────────────────────────
+STEM_G = (48, 118, 42)
+STEM_D = (28,  76, 28)
+THORN  = (38,  96, 36)
+
+def stem(d, x, y_top, y_bot):
+    d.line([(x,   y_top), (x,   y_bot)], fill=STEM_G, width=6)
+    d.line([(x+2, y_top), (x+2, y_bot)], fill=STEM_D, width=2)
+    for ty in range(y_top + 18, y_bot, 20):
         side = 1 if random.random() > 0.5 else -1
-        d.polygon([(x, ty), (x + side*14, ty - 6), (x + side*10, ty + 5)],
-                  fill=THORN_COL)
+        d.polygon([(x, ty), (x+side*16, ty-7), (x+side*12, ty+6)], fill=THORN)
 
-# Center: tall stem, full bloom
-stem_with_thorns(d, 400, 190, 385)
+# ── Centre rose: tall stem, full dark-red bloom ───────────────────────────────
+stem(d, 400, 185, 385)
 
-def rose_bloom(d, cx, cy, r=38):
-    """Full dark-red poppy bloom."""
-    # Outer petals
-    for angle in range(0, 360, 45):
-        a = math.radians(angle)
-        px = cx + math.cos(a) * r * 0.8
-        py = cy + math.sin(a) * r * 0.5
-        w2 = r * 0.55
-        h2 = r * 0.45
-        col = random.choice([(120,15,20),(100,10,15),(140,20,25),(80,5,10)])
-        d.ellipse([px-w2, py-h2, px+w2, py+h2], fill=col)
+def rose_full(d, cx, cy, r=40):
+    # Outer petal ring
+    for a in range(0, 360, 40):
+        ang  = math.radians(a)
+        px   = cx + math.cos(ang) * r * 0.75
+        py   = cy + math.sin(ang) * r * 0.5
+        pw   = r * 0.6
+        ph   = r * 0.48
+        col  = random.choice([(115,12,18),(95,8,12),(135,18,22),(75,4,8)])
+        d.ellipse([px-pw, py-ph, px+pw, py+ph], fill=col)
     # Inner petals
-    for angle in range(22, 360, 60):
-        a = math.radians(angle)
-        px = cx + math.cos(a) * r * 0.45
-        py = cy + math.sin(a) * r * 0.35
-        col = random.choice([(150,20,25),(130,15,20)])
-        d.ellipse([px-20, py-16, px+20, py+16], fill=col)
-    # Dark centre
-    d.ellipse([cx-14, cy-12, cx+14, cy+12], fill=(15, 5, 8))
-    d.ellipse([cx-7,  cy-6,  cx+7,  cy+6],  fill=(30, 8, 10))
+    for a in range(20, 360, 55):
+        ang = math.radians(a)
+        px  = cx + math.cos(ang) * r * 0.42
+        py  = cy + math.sin(ang) * r * 0.32
+        col = random.choice([(145,18,22),(125,12,18)])
+        d.ellipse([px-22, py-17, px+22, py+17], fill=col)
+    # Dark centre with seeds
+    d.ellipse([cx-15, cy-13, cx+15, cy+13], fill=(12, 4, 6))
+    for _ in range(6):
+        sx = cx + random.randint(-8, 8)
+        sy = cy + random.randint(-6, 6)
+        d.ellipse([sx-2, sy-2, sx+2, sy+2], fill=(35, 10, 12))
 
-rose_bloom(d, 400, 185)
+rose_full(d, 400, 178)
 
-# Left: shorter stem, half-open bud with drips
-stem_with_thorns(d, 255, 280, 385)
+# ── Left bud: white/cream half-open with red drips ───────────────────────────
+stem(d, 255, 278, 385)
 
 def bud_left(d, cx, cy):
-    # White/cream base sepals
-    d.ellipse([cx-18, cy-8, cx+18, cy+22], fill=(210, 195, 170))
-    # Brown/rust top
-    d.ellipse([cx-14, cy-18, cx+14, cy+6], fill=(110, 60, 25))
-    # Red drip lines
-    for dx2, length in [(-8, 22), (-2, 30), (5, 18), (11, 25)]:
-        d.line([(cx+dx2, cy+20), (cx+dx2+random.randint(-2,2), cy+20+length)],
-               fill=(160, 15, 20), width=2)
-        # drip bead
-        dbx = cx + dx2 + random.randint(-1, 1)
-        dby = cy + 20 + length
-        d.ellipse([dbx-3, dby-3, dbx+3, dby+3], fill=(140, 10, 15))
+    # Sepals (green petals behind)
+    d.polygon([(cx-18, cy+12), (cx-10, cy-18), (cx, cy-22), (cx+10, cy-18), (cx+18, cy+12)],
+              fill=(75, 110, 35))
+    # Cream petals
+    d.ellipse([cx-16, cy-15, cx+16, cy+18], fill=(218, 205, 180))
+    d.ellipse([cx-10, cy-20, cx+10, cy+5],  fill=(230, 218, 192))
+    # Brown/rust top (bud tip)
+    d.ellipse([cx-10, cy-20, cx+10, cy-5],  fill=(105, 55, 22))
+    # Red drip streaks
+    for ddx, dlen in [(-8, 28), (-2, 36), (4, 22), (10, 30)]:
+        d.line([(cx+ddx, cy+16), (cx+ddx+random.randint(-2,2), cy+16+dlen)],
+               fill=(155, 12, 18), width=2)
+        bx2, by2 = cx+ddx, cy+16+dlen
+        d.ellipse([bx2-3, by2-3, bx2+3, by2+4], fill=(135, 8, 14))
 
-bud_left(d, 255, 300)
+bud_left(d, 255, 302)
 
-# Right: shorter stem, green/yellow bud with red drips
-stem_with_thorns(d, 545, 270, 385)
+# ── Right bud: green/yellow with red drips ───────────────────────────────────
+stem(d, 548, 268, 385)
 
 def bud_right(d, cx, cy):
-    # Green-yellow base
-    d.ellipse([cx-16, cy-6, cx+16, cy+24], fill=(120, 140, 35))
-    d.ellipse([cx-12, cy-16, cx+12, cy+8], fill=(90, 115, 25))
-    # Red streak lines across
-    for dy2, dx2 in [(-10, 0), (-4, 5), (2, -3), (8, 4)]:
-        x1 = cx - 12
-        x2 = cx + 12
-        d.line([(x1, cy+dy2), (x2+dx2, cy+dy2+2)], fill=(180, 20, 20), width=2)
-    # Drips below
-    for dx2, length in [(-6, 20), (0, 28), (7, 16)]:
-        d.line([(cx+dx2, cy+22), (cx+dx2, cy+22+length)],
-               fill=(160, 15, 20), width=2)
-        dbx, dby = cx+dx2, cy+22+length
-        d.ellipse([dbx-3, dby-2, dbx+3, dby+5], fill=(140, 10, 15))
+    # Green-yellow bud body
+    d.polygon([(cx-17, cy+14), (cx-8, cy-18), (cx, cy-24), (cx+8, cy-18), (cx+17, cy+14)],
+              fill=(88, 108, 28))
+    d.ellipse([cx-15, cy-12, cx+15, cy+18], fill=(118, 138, 32))
+    d.ellipse([cx-10, cy-18, cx+10, cy+4],  fill=(95, 118, 24))
+    # Red slash lines across the green
+    for ddy in (-10, -3, 4, 11):
+        d.line([(cx-13, cy+ddy), (cx+13+random.randint(-2,2), cy+ddy+3)],
+               fill=(175, 18, 18), width=2)
+    # Red drips below
+    for ddx, dlen in [(-7, 22), (0, 32), (7, 18)]:
+        d.line([(cx+ddx, cy+16), (cx+ddx, cy+16+dlen)], fill=(155, 12, 18), width=2)
+        bx2, by2 = cx+ddx, cy+16+dlen
+        d.ellipse([bx2-3, by2-2, bx2+3, by2+5], fill=(135, 8, 14))
 
-bud_right(d, 545, 285)
+bud_right(d, 548, 288)
 
-# ── Dark torn-paper border ────────────────────────────────────────────────────
-border_col = (28, 22, 30)
-margin = 12
-# Top / bottom / left / right rough borders
-for _ in range(200):
-    x1 = random.randint(0, W)
-    thick = random.randint(3, 14)
-    side = random.choice(['top','bot','left','right'])
-    if side == 'top':
-        y1 = random.randint(0, margin)
-        d.rectangle([x1, y1, x1+random.randint(8,40), y1+thick], fill=border_col)
-    elif side == 'bot':
-        y1 = H - random.randint(0, margin)
-        d.rectangle([x1, y1-thick, x1+random.randint(8,40), y1], fill=border_col)
-    elif side == 'left':
+# ── Dark irregular border ─────────────────────────────────────────────────────
+bc = (24, 18, 26)
+for _ in range(280):
+    side  = random.choice(['T','B','L','R'])
+    thick = random.randint(3, 18)
+    if side == 'T':
+        x1 = random.randint(0, W)
+        d.rectangle([x1, 0, x1+random.randint(10,50), thick], fill=bc)
+    elif side == 'B':
+        x1 = random.randint(0, W)
+        d.rectangle([x1, H-thick, x1+random.randint(10,50), H], fill=bc)
+    elif side == 'L':
         y1 = random.randint(0, H)
-        d.rectangle([0, y1, random.randint(3,margin), y1+random.randint(8,40)], fill=border_col)
+        d.rectangle([0, y1, thick, y1+random.randint(10,50)], fill=bc)
     else:
         y1 = random.randint(0, H)
-        d.rectangle([W-random.randint(3,margin), y1, W, y1+random.randint(8,40)], fill=border_col)
+        d.rectangle([W-thick, y1, W, y1+random.randint(10,50)], fill=bc)
 
-# Solid thin frame
-d.rectangle([0, 0, W-1, H-1], outline=border_col, width=3)
+d.rectangle([0, 0, W-1, H-1], outline=bc, width=4)
 
-# ── Subtle vignette ───────────────────────────────────────────────────────────
+# ── Soft vignette ─────────────────────────────────────────────────────────────
 vig = Image.new('RGBA', (W, H), (0, 0, 0, 0))
 vd  = ImageDraw.Draw(vig)
-for r in range(max(W, H) // 2, 0, -3):
-    alpha = max(0, int(90 * (1 - r / (max(W, H) / 1.3))))
+for r in range(max(W, H)//2, 0, -3):
+    alpha = max(0, int(80 * (1 - r / (max(W, H) / 1.35))))
     vd.ellipse([W//2-r, H//2-r, W//2+r, H//2+r], outline=(0,0,0,alpha), width=3)
 img = Image.alpha_composite(img.convert('RGBA'), vig).convert('RGB')
 
@@ -205,3 +213,6 @@ out = 'assets/stages/dojo/background.png'
 os.makedirs(os.path.dirname(out), exist_ok=True)
 img.save(out)
 print(f'Saved {out}')
+print()
+print('TIP: drop Ben\'s actual painting photo as assets/stages/dojo/background.png')
+print('     to use the real artwork — the game loads any PNG placed there.')

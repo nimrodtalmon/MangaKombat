@@ -7,38 +7,11 @@ import { CharacterSelectState }  from './states/CharacterSelectState.js';
 import { RoundAnnouncerState }   from './states/RoundAnnouncerState.js';
 import { FightState }            from './states/FightState.js';
 import { VictoryState }          from './states/VictoryState.js';
-
-function setupTouchButtons(inputManager) {
-  const pad = document.getElementById('touch-pad');
-  if (!pad) return;
-  pad.style.display = 'flex';
-
-  const btns = pad.querySelectorAll('.tbtn');
-  btns.forEach(btn => {
-    const action = btn.dataset.action;
-
-    btn.addEventListener('touchstart', e => {
-      e.preventDefault();
-      btn.classList.add('pressed');
-      inputManager.setTouchP1(action, true);
-    }, { passive: false });
-
-    btn.addEventListener('touchend', e => {
-      e.preventDefault();
-      btn.classList.remove('pressed');
-      inputManager.setTouchP1(action, false);
-    }, { passive: false });
-
-    btn.addEventListener('touchcancel', () => {
-      btn.classList.remove('pressed');
-      inputManager.setTouchP1(action, false);
-    });
-  });
-}
+import { TouchControls }         from './ui/TouchControls.js';
 
 async function main() {
-  const canvas   = document.getElementById('game');
-  const loading  = document.getElementById('loading');
+  const canvas  = document.getElementById('game');
+  const loading = document.getElementById('loading');
 
   const isMobile = navigator.maxTouchPoints > 0;
 
@@ -47,10 +20,13 @@ async function main() {
   const assetLoader  = new AssetLoader();
   const ctx          = renderer.context;
 
-  // ── Game states ──────────────────────────────────────────────────────────
+  // Touch joystick — only created on mobile
+  const touch = isMobile ? new TouchControls(canvas) : null;
+
+  // ── Game states ───────────────────────────────────────────────────────────
   const charSelect    = new CharacterSelectState(assetLoader, { defaultVsAI: isMobile });
   const roundAnnounce = new RoundAnnouncerState(assetLoader);
-  const fight         = new FightState(assetLoader, inputManager);
+  const fight         = new FightState(assetLoader, inputManager, { isMobile });
   const victory       = new VictoryState();
 
   const sm = new StateMachine();
@@ -59,8 +35,8 @@ async function main() {
   sm.register('fight',           fight);
   sm.register('victory',         victory);
 
-  // ── URL shortcut: ?state=fight&p1=ben&p2=warrior ─────────────────────────
-  const params  = new URLSearchParams(location.search);
+  // ── URL shortcut: ?state=fight&p1=dummy&p2=dummy_red ──────────────────────
+  const params    = new URLSearchParams(location.search);
   const initState = params.get('state');
   if (initState === 'fight') {
     await sm.transition('roundAnnounce', {
@@ -77,29 +53,29 @@ async function main() {
   loading.style.display = 'none';
   canvas.style.display  = 'block';
 
-  // ── Mobile touch controls ────────────────────────────────────────────────
-  if (isMobile) setupTouchButtons(inputManager);
-
   // ── Game loop ─────────────────────────────────────────────────────────────
   const loop = new GameLoop(
     // update
     () => {
+      // Push touch joystick state into inputManager before any snapshot reads
+      if (touch) touch.update(inputManager);
+
       const p1 = inputManager.getSnapshot(1);
       const p2 = inputManager.getSnapshot(2);
 
-      // CharacterSelect and Victory manage input themselves
       const cur = sm._current;
       if (cur && cur.handleInput) cur.handleInput(p1, p2);
 
       sm.update();
 
-      // endFrame is called inside FightState.update(); call it here for non-fight states
       if (cur !== fight) inputManager.endFrame();
     },
     // render
     (interp) => {
       renderer.beginFrame();
       sm.render(ctx, interp);
+      // Joystick overlay always on top
+      if (touch) touch.render(ctx);
     },
   );
 

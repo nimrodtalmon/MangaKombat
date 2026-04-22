@@ -36,7 +36,7 @@ const DEFAULT_STATES = {
     attackBoxes: [],
   },
   punch_high: {
-    sprite: 'attack', duration: 22, nextState: 'idle',
+    sprite: 'punch_high', duration: 22, nextState: 'idle',
     transform: { leanX: 14 },
     hurtBoxes:  [{ box: { x: -22, y: -155, w: 44, h: 155 } }],
     attackBoxes: [{
@@ -46,7 +46,7 @@ const DEFAULT_STATES = {
     }],
   },
   kick_high: {
-    sprite: 'attack', duration: 28, nextState: 'idle',
+    sprite: 'kick_high', duration: 28, nextState: 'idle',
     transform: { leanX: 8 },
     hurtBoxes:  [{ box: { x: -22, y: -155, w: 44, h: 155 } }],
     attackBoxes: [{
@@ -56,7 +56,7 @@ const DEFAULT_STATES = {
     }],
   },
   punch_low: {
-    sprite: 'attack', duration: 20, nextState: 'idle',
+    sprite: 'punch_low', duration: 20, nextState: 'idle',
     transform: { leanX: 10 },
     hurtBoxes:  [{ box: { x: -22, y: -155, w: 44, h: 155 } }],
     attackBoxes: [{
@@ -66,7 +66,7 @@ const DEFAULT_STATES = {
     }],
   },
   kick_low: {
-    sprite: 'attack', duration: 24, nextState: 'idle',
+    sprite: 'kick_low', duration: 24, nextState: 'idle',
     transform: { leanX: 6 },
     hurtBoxes:  [{ box: { x: -22, y: -155, w: 44, h: 155 } }],
     attackBoxes: [{

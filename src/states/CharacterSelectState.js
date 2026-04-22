@@ -60,8 +60,11 @@ export class CharacterSelectState {
       if (p1Input.downPressed)  this._cursor[0] = (this._cursor[0] + COLS) % ROSTER.length;
       if (p1Input.upPressed)    this._cursor[0] = (this._cursor[0] - COLS + ROSTER.length) % ROSTER.length;
       // E or C toggles VS AI mode
-      if (p1Input.hkPressed || p1Input.lkPressed) this._vsAI = !this._vsAI;
-      if (p1Input.hpPressed || p1Input.lpPressed) this._confirmed[0] = true;
+      if (p1Input.hkPressed || p1Input.lkPressed) {
+        this._vsAI = !this._vsAI;  // E / C or joystick left/right → toggle mode
+      } else if (p1Input.hpPressed || p1Input.lpPressed) {
+        this._confirmed[0] = true; // Q / Z or joystick up/down → confirm
+      }
     }
 
     if (this._vsAI) {
@@ -76,7 +79,8 @@ export class CharacterSelectState {
         if (p2Input.leftPressed)  this._cursor[1] = (this._cursor[1] - 1 + ROSTER.length) % ROSTER.length;
         if (p2Input.downPressed)  this._cursor[1] = (this._cursor[1] + COLS) % ROSTER.length;
         if (p2Input.upPressed)    this._cursor[1] = (this._cursor[1] - COLS + ROSTER.length) % ROSTER.length;
-        if (p2Input.hpPressed || p2Input.lpPressed) this._confirmed[1] = true;
+        if (p2Input.hpPressed || p2Input.lpPressed ||
+            p2Input.hkPressed || p2Input.lkPressed) this._confirmed[1] = true;
       }
     }
 

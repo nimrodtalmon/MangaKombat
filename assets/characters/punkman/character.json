@@ -3,12 +3,16 @@
   "displayName": "Punkman",
   "color": "#c01010",
   "sprites": {
-    "idle":   "idle.png",
-    "walk":   "walk.png",
-    "attack": "attack.png",
-    "hit":    "hit.png",
-    "crouch": "crouch.png",
-    "win":    "win.png"
+    "idle":       "idle.png",
+    "walk":       "walk.png",
+    "punch_high": "punch_high.png",
+    "punch_low":  "punch_low.png",
+    "kick_high":  "kick_high.png",
+    "kick_low":   "kick_low.png",
+    "attack":     "punch_high.png",
+    "hit":        "hit.png",
+    "crouch":     "crouch.png",
+    "win":        "win.png"
   },
   "spriteConfig": { "scale": 1.6, "groundOffsetY": 0 },
   "stats": {
