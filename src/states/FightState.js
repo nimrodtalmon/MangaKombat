@@ -1,6 +1,7 @@
 import { FightEngine, FIGHT_RESULT } from '../fight/FightEngine.js';
-import { UIRenderer } from '../rendering/UIRenderer.js';
-import { ROUNDS_TO_WIN } from '../constants.js';
+import { AIController }              from '../engine/AIController.js';
+import { UIRenderer }                from '../rendering/UIRenderer.js';
+import { ROUNDS_TO_WIN, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants.js';
 
 // Phases within a fight
 const PHASE = Object.freeze({
@@ -52,7 +53,7 @@ export class FightState {
     this._engine = new FightEngine(
       p1Data, p1Sprites, p2Data, p2Sprites,
       stageData, this.inputManager,
-      { roundWins, round },
+      { roundWins, round, aiController: params.vsAI ? new AIController() : null },
     );
   }
 
@@ -60,6 +61,12 @@ export class FightState {
 
   update() {
     if (!this._engine) return;
+
+    // Escape returns to character select
+    if (this.inputManager._justPressed.has('Escape')) {
+      this.stateMachine.transition('characterSelect', {});
+      return;
+    }
 
     this._engine.update();
     this.inputManager.endFrame();
@@ -126,6 +133,15 @@ export class FightState {
     if (!this._engine) return;
 
     this._engine.render(ctx);
+
+    // ESC hint
+    ctx.save();
+    ctx.fillStyle    = 'rgba(255,255,255,0.35)';
+    ctx.font         = '10px monospace';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('ESC: MENU', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 2);
+    ctx.restore();
 
     if (this._phase === PHASE.FINISH_HIM) {
       this._ui.drawDimOverlay(ctx, 0.3);

@@ -2,21 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>MangaKombat</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #000;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       overflow: hidden;
       font-family: monospace;
+      touch-action: none;
+    }
+    #game-wrap {
+      width: 100vw;
+      max-width: 800px;
+      position: relative;
     }
     canvas {
       display: block;
+      width: 100%;
+      height: auto;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
@@ -26,11 +35,84 @@
       letter-spacing: 4px;
       text-transform: uppercase;
     }
+
+    /* ── Touch controls ────────────────────────────────────────────────────── */
+    #touch-pad {
+      display: none;
+      width: 100vw;
+      max-width: 800px;
+      height: 160px;
+      position: relative;
+      background: #0a0a0a;
+      border-top: 1px solid #222;
+      user-select: none;
+    }
+    .touch-cluster {
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+    }
+    #tc-left  { left: 8px;  width: 180px; }
+    #tc-right { right: 8px; width: 200px; }
+
+    .tbtn {
+      position: absolute;
+      border-radius: 8px;
+      border: 2px solid #444;
+      background: rgba(255,255,255,0.08);
+      color: #ccc;
+      font: bold 11px monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.05s;
+    }
+    .tbtn:active, .tbtn.pressed {
+      background: rgba(255,255,255,0.28);
+      border-color: #aaa;
+      color: #fff;
+    }
+
+    /* D-pad layout */
+    #btn-up    { left: 62px; top:  4px; width: 52px; height: 44px; }
+    #btn-left  { left:  4px; top: 52px; width: 52px; height: 44px; }
+    #btn-right { left:120px; top: 52px; width: 52px; height: 44px; }
+    #btn-down  { left: 62px; top:100px; width: 52px; height: 44px; }
+
+    /* Attack buttons */
+    #btn-hp    { left:  0px; top:  4px; width: 56px; height: 44px; border-color: #55f; color: #aaf; }
+    #btn-hk    { left:140px; top:  4px; width: 56px; height: 44px; border-color: #f80; color: #fc8; }
+    #btn-block { left: 68px; top: 52px; width: 60px; height: 44px; border-color: #888; }
+    #btn-lp    { left:  0px; top:100px; width: 56px; height: 44px; border-color: #5a5; color: #8d8; }
+    #btn-lk    { left:140px; top:100px; width: 56px; height: 44px; border-color: #a55; color: #e88; }
   </style>
 </head>
 <body>
   <div id="loading">Loading...</div>
-  <canvas id="game" style="display:none"></canvas>
+  <div id="game-wrap">
+    <canvas id="game" style="display:none" width="800" height="450"></canvas>
+  </div>
+
+  <div id="touch-pad">
+    <!-- Left cluster: directional -->
+    <div class="touch-cluster" id="tc-left">
+      <div class="tbtn" id="btn-up"    data-action="up">↑</div>
+      <div class="tbtn" id="btn-left"  data-action="left">←</div>
+      <div class="tbtn" id="btn-right" data-action="right">→</div>
+      <div class="tbtn" id="btn-down"  data-action="down">↓</div>
+    </div>
+    <!-- Right cluster: attacks -->
+    <div class="touch-cluster" id="tc-right">
+      <div class="tbtn" id="btn-hp"    data-action="hp">HP</div>
+      <div class="tbtn" id="btn-hk"    data-action="hk">HK</div>
+      <div class="tbtn" id="btn-block" data-action="block">BLK</div>
+      <div class="tbtn" id="btn-lp"    data-action="lp">LP</div>
+      <div class="tbtn" id="btn-lk"    data-action="lk">LK</div>
+    </div>
+  </div>
+
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

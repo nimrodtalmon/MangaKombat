@@ -8,12 +8,13 @@ export const ROSTER = ['dummy', 'dummy_red', 'punkman'];
 const PORTRAIT_SIZE = 110;
 const COLS          = 4;
 const GAP           = 20;
-const GRID_TOP      = 160;
+const GRID_TOP      = 170;
 
 export class CharacterSelectState {
-  constructor(assetLoader) {
-    this.assetLoader = assetLoader;
-    this.stateMachine = null; // injected by StateMachine.register
+  constructor(assetLoader, { defaultVsAI = false } = {}) {
+    this.assetLoader    = assetLoader;
+    this.stateMachine   = null; // injected by StateMachine.register
+    this._defaultVsAI   = defaultVsAI;
 
     this._portraits  = {}; // id → Image
     this._charData   = {}; // id → parsed JSON
@@ -21,6 +22,7 @@ export class CharacterSelectState {
     this._confirmed  = [false, false];
     this._frame      = 0;
     this._ready      = false;
+    this._vsAI       = defaultVsAI;
   }
 
   async enter() {
@@ -28,6 +30,7 @@ export class CharacterSelectState {
     this._confirmed = [false, false];
     this._frame     = 0;
     this._ready     = false;
+    this._vsAI      = this._defaultVsAI;
 
     // Load all character data and portraits
     for (const id of ROSTER) {
@@ -46,7 +49,6 @@ export class CharacterSelectState {
   update() {
     if (!this._ready) return;
     this._frame++;
-    // Input is handled inline via stored snapshot — pull from context
   }
 
   handleInput(p1Input, p2Input) {
@@ -57,15 +59,25 @@ export class CharacterSelectState {
       if (p1Input.leftPressed)  this._cursor[0] = (this._cursor[0] - 1 + ROSTER.length) % ROSTER.length;
       if (p1Input.downPressed)  this._cursor[0] = (this._cursor[0] + COLS) % ROSTER.length;
       if (p1Input.upPressed)    this._cursor[0] = (this._cursor[0] - COLS + ROSTER.length) % ROSTER.length;
+      // E or C toggles VS AI mode
+      if (p1Input.hkPressed || p1Input.lkPressed) this._vsAI = !this._vsAI;
       if (p1Input.hpPressed || p1Input.lpPressed) this._confirmed[0] = true;
     }
 
-    if (!this._confirmed[1]) {
-      if (p2Input.rightPressed) this._cursor[1] = (this._cursor[1] + 1) % ROSTER.length;
-      if (p2Input.leftPressed)  this._cursor[1] = (this._cursor[1] - 1 + ROSTER.length) % ROSTER.length;
-      if (p2Input.downPressed)  this._cursor[1] = (this._cursor[1] + COLS) % ROSTER.length;
-      if (p2Input.upPressed)    this._cursor[1] = (this._cursor[1] - COLS + ROSTER.length) % ROSTER.length;
-      if (p2Input.hpPressed || p2Input.lpPressed) this._confirmed[1] = true;
+    if (this._vsAI) {
+      // CPU auto-selects same character as P1 once P1 confirms
+      if (this._confirmed[0] && !this._confirmed[1]) {
+        this._cursor[1]    = this._cursor[0];
+        this._confirmed[1] = true;
+      }
+    } else {
+      if (!this._confirmed[1]) {
+        if (p2Input.rightPressed) this._cursor[1] = (this._cursor[1] + 1) % ROSTER.length;
+        if (p2Input.leftPressed)  this._cursor[1] = (this._cursor[1] - 1 + ROSTER.length) % ROSTER.length;
+        if (p2Input.downPressed)  this._cursor[1] = (this._cursor[1] + COLS) % ROSTER.length;
+        if (p2Input.upPressed)    this._cursor[1] = (this._cursor[1] - COLS + ROSTER.length) % ROSTER.length;
+        if (p2Input.hpPressed || p2Input.lpPressed) this._confirmed[1] = true;
+      }
     }
 
     if (this._confirmed[0] && this._confirmed[1]) {
@@ -74,6 +86,7 @@ export class CharacterSelectState {
       this.stateMachine.transition('roundAnnounce', {
         p1CharId: p1Id, p2CharId: p2Id,
         round: 1, roundWins: [0, 0],
+        vsAI: this._vsAI,
       });
     }
   }
@@ -88,15 +101,26 @@ export class CharacterSelectState {
     ctx.font         = 'bold 36px monospace';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('MANGAKOMBAT', CANVAS_WIDTH / 2, 18);
+    ctx.fillText('MANGAKOMBAT', CANVAS_WIDTH / 2, 14);
 
     ctx.fillStyle = '#ff0';
     ctx.font      = 'bold 14px monospace';
-    ctx.fillText('SELECT YOUR FIGHTER', CANVAS_WIDTH / 2, 62);
+    ctx.fillText('SELECT YOUR FIGHTER', CANVAS_WIDTH / 2, 58);
 
-    ctx.fillStyle = '#888';
-    ctx.font      = '11px monospace';
-    ctx.fillText('P1: Q/E/Z/C to confirm   P2: Numpad 7/9/1/3 to confirm', CANVAS_WIDTH / 2, 84);
+    // Mode toggle
+    const modeFlash = Math.floor(this._frame / 20) % 2 === 0;
+    ctx.fillStyle = modeFlash ? '#fff' : '#aaa';
+    ctx.font      = 'bold 13px monospace';
+    const modeLabel = this._vsAI ? 'MODE: VS CPU' : 'MODE: VS PLAYER';
+    ctx.fillText(`${modeLabel}   [E: toggle]`, CANVAS_WIDTH / 2, 80);
+
+    ctx.fillStyle = '#666';
+    ctx.font      = '10px monospace';
+    if (this._vsAI) {
+      ctx.fillText('P1: Q/Z to confirm', CANVAS_WIDTH / 2, 98);
+    } else {
+      ctx.fillText('P1: Q/Z to confirm   P2: Numpad 7/1 to confirm', CANVAS_WIDTH / 2, 98);
+    }
 
     if (!this._ready) {
       ctx.fillStyle = '#fff';
@@ -115,17 +139,15 @@ export class CharacterSelectState {
       const x   = startX + col * (PORTRAIT_SIZE + GAP);
       const y   = GRID_TOP + row * (PORTRAIT_SIZE + GAP + 20);
 
-      // Slot background
       const isP1 = this._cursor[0] === i;
-      const isP2 = this._cursor[1] === i;
+      const isP2 = !this._vsAI && this._cursor[1] === i;
+
       ctx.fillStyle = '#111';
       ctx.fillRect(x, y, PORTRAIT_SIZE, PORTRAIT_SIZE);
 
-      // Portrait image
       const img = this._portraits[id];
       if (img) ctx.drawImage(img, x, y, PORTRAIT_SIZE, PORTRAIT_SIZE);
 
-      // Cursor highlight
       if (isP1) {
         ctx.strokeStyle = this._confirmed[0] ? '#0f0' : '#00f';
         ctx.lineWidth   = isP1 && isP2 ? 3 : 4;
@@ -137,7 +159,6 @@ export class CharacterSelectState {
         ctx.strokeRect(x + (isP1 ? 2 : -2), y + (isP1 ? 2 : -2), PORTRAIT_SIZE - 4, PORTRAIT_SIZE - 4);
       }
 
-      // Name
       ctx.fillStyle    = '#fff';
       ctx.font         = 'bold 12px monospace';
       ctx.textAlign    = 'center';
@@ -148,23 +169,27 @@ export class CharacterSelectState {
       );
     });
 
-    // Confirmed labels
+    // Status row
     ctx.font      = 'bold 13px monospace';
     ctx.textAlign = 'left';
     if (this._confirmed[0]) {
       ctx.fillStyle = '#0f0';
-      ctx.fillText('P1 READY', 20, CANVAS_HEIGHT - 30);
+      ctx.fillText('P1 READY', 20, CANVAS_HEIGHT - 22);
     } else {
-      ctx.fillStyle = '#00f';
-      ctx.fillText('P1 CHOOSING...', 20, CANVAS_HEIGHT - 30);
+      ctx.fillStyle = '#44f';
+      ctx.fillText('P1 CHOOSING...', 20, CANVAS_HEIGHT - 22);
     }
+
     ctx.textAlign = 'right';
-    if (this._confirmed[1]) {
+    if (this._vsAI) {
+      ctx.fillStyle = this._confirmed[0] ? '#0f0' : '#888';
+      ctx.fillText(this._confirmed[0] ? 'CPU READY' : 'CPU', CANVAS_WIDTH - 20, CANVAS_HEIGHT - 22);
+    } else if (this._confirmed[1]) {
       ctx.fillStyle = '#0f0';
-      ctx.fillText('P2 READY', CANVAS_WIDTH - 20, CANVAS_HEIGHT - 30);
+      ctx.fillText('P2 READY', CANVAS_WIDTH - 20, CANVAS_HEIGHT - 22);
     } else {
       ctx.fillStyle = '#f00';
-      ctx.fillText('P2 CHOOSING...', CANVAS_WIDTH - 20, CANVAS_HEIGHT - 30);
+      ctx.fillText('P2 CHOOSING...', CANVAS_WIDTH - 20, CANVAS_HEIGHT - 22);
     }
   }
 }

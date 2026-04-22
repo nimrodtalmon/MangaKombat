@@ -32,8 +32,9 @@ export class FightEngine {
     this.result        = FIGHT_RESULT.NONE;
     this.frozen        = false; // true during "FINISH HIM!" / win freeze
 
-    this.roundWins = params.roundWins || [0, 0];
-    this.round     = params.round     || 1;
+    this.roundWins = params.roundWins    || [0, 0];
+    this.round     = params.round        || 1;
+    this._ai       = params.aiController || null;
 
     // Debug: URL param ?debug=hitboxes
     this.showHitboxes = new URLSearchParams(location.search).get('debug') === 'hitboxes';
@@ -53,7 +54,9 @@ export class FightEngine {
     this._slowmoCounter -= 1;
 
     const p1Input = this.inputManager.getSnapshot(1);
-    const p2Input = this.inputManager.getSnapshot(2);
+    const p2Input = this._ai
+      ? this._ai.getSnapshot(this.p2, this.p1)
+      : this.inputManager.getSnapshot(2);
 
     // FSM updates
     this.p1.fsm.update(p1Input, this.p1);
